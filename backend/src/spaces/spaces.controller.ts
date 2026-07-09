@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { SpacesService } from './spaces.service';
@@ -31,6 +32,17 @@ export class SpacesController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.spacesService.findOne(id);
+  }
+
+  // Público (igual que el catálogo): solo expone startTime/endTime, sin
+  // datos del usuario, para que el frontend calcule horarios ocupados
+  // al construir el selector de reserva.
+  @Get(':id/reservations')
+  getReservationsForDate(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('date') date: string,
+  ) {
+    return this.spacesService.getReservationsForDate(id, date);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

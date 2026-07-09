@@ -95,10 +95,22 @@ export interface Review {
   id: number;
   spaceId: number;
   userId: number;
-  userName: string;
+  user: Pick<User, "id" | "name">;
   rating: number; // 1-5
-  comment: string;
+  comment: string | null;
   createdAt: string;
+}
+
+export interface CreateReviewDto {
+  rating: number;
+  comment?: string;
+}
+
+// Franja ocupada de un espacio, tal como la devuelve
+// GET /spaces/:id/reservations?date=YYYY-MM-DD (sin datos del usuario).
+export interface ReservationSlot {
+  startTime: string;
+  endTime: string;
 }
 
 export interface Favorite {

@@ -1,5 +1,5 @@
 import { api } from "../api-client";
-import type { Space, CreateSpaceDto } from "../types";
+import type { Space, CreateSpaceDto, ReservationSlot } from "../types";
 
 export const spacesService = {
   findAll(): Promise<Space[]> {
@@ -8,6 +8,14 @@ export const spacesService = {
 
   findOne(id: number): Promise<Space> {
     return api.get<Space>(`/spaces/${id}`);
+  },
+
+  // Público: franjas ya ocupadas (PENDING/CONFIRMED) de un espacio en una
+  // fecha dada. Se usa para deshabilitar horarios en el selector de reserva.
+  getReservationsForDate(id: number, date: string): Promise<ReservationSlot[]> {
+    return api.get<ReservationSlot[]>(`/spaces/${id}/reservations?date=${date}`, {
+      auth: false,
+    });
   },
 
   create(dto: CreateSpaceDto): Promise<Space> {
