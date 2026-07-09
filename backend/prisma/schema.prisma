@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  name          String
+  email         String          @unique
+  password      String
+  role          String          @default("USER")
+  status        Boolean         @default(true)
+  reservations  Reservation[]
+  reviews       Review[]
+  favorites     Favorite[]
+  notifications Notification[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Space {
+  id           Int           @id @default(autoincrement())
+  name         String
+  description  String?
+  location     String
+  capacity     Int
+  type         String
+  imageUrl     String?
+  status       Boolean       @default(true)
+  reservations Reservation[]
+  reviews      Review[]
+  favorites    Favorite[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Reservation {
+  id            Int             @id @default(autoincrement())
+  userId        Int
+  spaceId       Int
+  startTime     DateTime
+  endTime       DateTime
+  status        String          @default("PENDING")
+  reason        String?
+
+  user          User            @relation(fields: [userId], references: [id])
+  space         Space           @relation(fields: [spaceId], references: [id])
+  notifications Notification[]
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+// Reseña que un usuario deja sobre un espacio (rating 1-5 + comentario).
+// La validación de rango de "rating" se hace en el DTO (class-validator),
+// SQLite/Prisma no soporta check constraints declarativas aquí.
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  spaceId   Int
+  rating    Int
+  comment   String?
+
+  user      User     @relation(fields: [userId], references: [id])
+  space     Space    @relation(fields: [spaceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Un usuario no debería dejar más de una reseña por espacio.
+  @@unique([userId, spaceId])
+}
+
+// Espacio marcado como favorito por un usuario.
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  spaceId   Int
+
+  user      User     @relation(fields: [userId], references: [id])
+  space     Space    @relation(fields: [spaceId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  // Evita duplicados: un usuario solo puede favoritear un espacio una vez.
+  @@unique([userId, spaceId])
+}
+
+// Notificación dirigida a un usuario.
+// type es String (mismo patrón que Reservation.status / User.role) con
+// los siguientes valores esperados:
+//   RESERVATION_CONFIRMED | RESERVATION_CANCELLED |
+//   RESERVATION_REMINDER  | REVIEW_REQUEST
+model Notification {
+  id            Int          @id @default(autoincrement())
+  userId        Int
+  type          String
+  message       String
+  read          Boolean      @default(false)
+
+  user          User         @relation(fields: [userId], references: [id])
+
+  // Referencia opcional a la reserva que originó la notificación
+  // (confirmaciones, cancelaciones, recordatorios). Nula para otros tipos.
+  reservationId Int?
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+
+  createdAt     DateTime     @default(now())
+}
