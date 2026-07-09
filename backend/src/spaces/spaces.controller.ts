@@ -16,7 +16,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
-@UseGuards(JwtAuthGuard)
+// Sin guard a nivel de clase: el catálogo de espacios se puede navegar
+// sin iniciar sesión (pantalla "Explorar"). Solo las mutaciones (crear,
+// editar, eliminar) requieren estar autenticado y ser ADMIN.
 @Controller('spaces')
 export class SpacesController {
   constructor(private readonly spacesService: SpacesService) {}
@@ -31,21 +33,21 @@ export class SpacesController {
     return this.spacesService.findOne(id);
   }
 
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreateSpaceDto) {
     return this.spacesService.create(dto);
   }
 
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSpaceDto) {
     return this.spacesService.update(id, dto);
   }
 
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

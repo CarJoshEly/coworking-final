@@ -5,6 +5,33 @@
 
 import type { Notification } from "./types";
 
+// ---- Datos temporales para Space: la API todavía no expone "comodidades"
+// ni "precio por hora" (el modelo Prisma solo tiene name/description/
+// location/capacity/type/imageUrl). Se derivan de forma DETERMINISTA por
+// id para que Explorar sea funcional mientras se agregan esos campos reales
+// en el backend (ver nota al final de app/explorar/page.tsx).
+
+export type AmenityKey = "wifi" | "proyector" | "cafe";
+
+export const AMENITY_LABELS: Record<AmenityKey, string> = {
+  wifi: "Wifi",
+  proyector: "Proyector",
+  cafe: "Café",
+};
+
+const ALL_AMENITIES: AmenityKey[] = ["wifi", "proyector", "cafe"];
+
+export function getSpaceAmenities(spaceId: number): AmenityKey[] {
+  // Subconjunto estable por id (no cambia entre renders ni recargas).
+  return ALL_AMENITIES.filter((_, i) => (spaceId + i) % 3 !== 0);
+}
+
+export function getSpacePricePerHour(spaceId: number): number {
+  // Precio estable derivado del id, en el rango L 80–220/hora.
+  return 80 + ((spaceId * 37) % 15) * 10;
+}
+
+
 export const mockNotifications: Notification[] = [
   {
     id: 1,

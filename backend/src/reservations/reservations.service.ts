@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SpacesService } from '../spaces/spaces.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
 
@@ -16,6 +17,7 @@ export class ReservationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly spacesService: SpacesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(userId: number, dto: CreateReservationDto) {
@@ -77,7 +79,24 @@ export class ReservationsService {
       throw new ForbiddenException('No puedes modificar esta reserva');
     }
 
-    return this.prisma.reservation.update({ where: { id }, data: { status: dto.status } });
+    const updated = await this.prisma.reservation.update({
+      where: { id },
+      data: { status: dto.status },
+    });
+
+    // Notificación automática al dueño de la reserva.
+    const space = await this.spacesService.findOne(updated.spaceId);
+    const isConfirmed = dto.status === 'CONFIRMED';
+    await this.notificationsService.create({
+      userId: updated.userId,
+      type: isConfirmed ? 'RESERVATION_CONFIRMED' : 'RESERVATION_CANCELLED',
+      message: isConfirmed
+        ? `Tu reserva en ${space.name} fue confirmada.`
+        : `Tu reserva en ${space.name} fue cancelada.`,
+      reservationId: updated.id,
+    });
+
+    return updated;
   }
 
   async remove(id: number, userId: number, role: string) {
