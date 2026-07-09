@@ -6,6 +6,7 @@ import Link from "next/link";
 import { authService } from "@/lib/services/auth";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api-client";
+import type { UserRole } from "@/lib/types";
 
 export default function RegistroPage() {
   const { login } = useAuth();
@@ -13,6 +14,7 @@ export default function RegistroPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("USER");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +23,7 @@ export default function RegistroPage() {
     setError(null);
     setLoading(true);
     try {
-      await authService.register({ name, email, password });
+      await authService.register({ name, email, password, role });
       await login({ email, password });
       router.push("/explorar");
     } catch (err) {
@@ -32,13 +34,14 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="font-display text-2xl font-semibold">Crea tu cuenta</h1>
-      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-        Regístrate para empezar a reservar espacios.
-      </p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm rounded-3xl border border-[var(--color-border)] bg-white/90 p-8 shadow-lg shadow-black/5">
+        <h1 className="font-display text-2xl font-semibold">Crea tu cuenta</h1>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+          Regístrate para empezar a reservar espacios.
+        </p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="text-sm font-medium">Nombre</label>
           <input
@@ -70,6 +73,18 @@ export default function RegistroPage() {
           />
         </div>
 
+        <div>
+          <label className="text-sm font-medium">Rol</label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as UserRole)}
+            className="mt-1 w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          >
+            <option value="USER">Usuario</option>
+            <option value="ADMIN">Administrador</option>
+          </select>
+        </div>
+
         {error && <p className="text-sm text-[var(--color-status-cancelled)]">{error}</p>}
 
         <button
@@ -88,5 +103,6 @@ export default function RegistroPage() {
         </Link>
       </p>
     </div>
+  </div>
   );
 }

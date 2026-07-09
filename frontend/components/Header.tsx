@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useFavorites } from "@/lib/favorites-context";
 import { reservationsService } from "@/lib/services/reservations";
 import { NotificationsBell } from "./NotificationsBell";
 
@@ -24,9 +25,11 @@ function CountPill({ count }: { count: number }) {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout, loading } = useAuth();
+  const { favorites } = useFavorites();
   const [activeReservations, setActiveReservations] = useState(0);
-  const [favoritesCount, setFavoritesCount] = useState(0);
+  const navLinks = user?.role === "ADMIN" ? [...NAV_LINKS, { href: "/admin/espacios", label: "Admin" }] : NAV_LINKS;
 
   useEffect(() => {
     if (!user) {
@@ -41,24 +44,11 @@ export function Header() {
         ),
       )
       .catch(() => setActiveReservations(0));
-  }, [user]);
-
-  useEffect(() => {
-    // Favoritos vive en localStorage hasta que exista el endpoint en la API.
-    Promise.resolve().then(() => {
-      try {
-        const raw = window.localStorage.getItem("sede_favorites");
-        const ids: number[] = raw ? JSON.parse(raw) : [];
-        setFavoritesCount(ids.length);
-      } catch {
-        setFavoritesCount(0);
-      }
-    });
-  }, [pathname]);
+  }, [user, pathname]);
 
   const counts: Record<string, number> = {
     "/mis-reservas": activeReservations,
-    "/favoritos": favoritesCount,
+    "/favoritos": favorites.length,
   };
 
   return (
@@ -67,15 +57,15 @@ export function Header() {
         <div className="flex items-center gap-8">
           <Link href="/explorar" className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-primary)] font-display text-sm font-bold text-white">
-              S
+              C
             </span>
             <span className="font-display text-lg font-semibold tracking-tight">
-              Sede
+              Coworking
             </span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map((link) => {
+            {navLinks.map((link) => {
               const isActive = pathname?.startsWith(link.href);
               return (
                 <Link
@@ -109,7 +99,10 @@ export function Header() {
                 </p>
               </div>
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  router.push("/login");
+                }}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-sm font-semibold text-[var(--color-primary-dark)]"
                 title="Cerrar sesión"
               >
@@ -128,7 +121,7 @@ export function Header() {
       </div>
 
       <nav className="flex items-center gap-1 overflow-x-auto border-t border-[var(--color-border)] px-4 py-2 md:hidden">
-        {NAV_LINKS.map((link) => {
+        {navLinks.map((link) => {
           const isActive = pathname?.startsWith(link.href);
           return (
             <Link

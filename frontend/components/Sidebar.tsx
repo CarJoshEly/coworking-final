@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useFavorites } from "@/lib/favorites-context";
 import { reservationsService } from "@/lib/services/reservations";
 
 const NAV_LINKS = [
@@ -29,9 +30,11 @@ export function Sidebar({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout, loading } = useAuth();
+  const { favorites } = useFavorites();
   const [activeReservations, setActiveReservations] = useState(0);
-  const [favoritesCount, setFavoritesCount] = useState(0);
+  const navLinks = user?.role === "ADMIN" ? [...NAV_LINKS, { href: "/admin/espacios", label: "Admin", icon: AdminIcon }] : NAV_LINKS;
 
   useEffect(() => {
     if (!user) {
@@ -46,38 +49,26 @@ export function Sidebar({
         ),
       )
       .catch(() => setActiveReservations(0));
-  }, [user]);
-
-  useEffect(() => {
-    Promise.resolve().then(() => {
-      try {
-        const raw = window.localStorage.getItem("sede_favorites");
-        const ids: number[] = raw ? JSON.parse(raw) : [];
-        setFavoritesCount(ids.length);
-      } catch {
-        setFavoritesCount(0);
-      }
-    });
-  }, [pathname]);
+  }, [user, pathname]);
 
   const counts: Record<string, number> = {
     "/mis-reservas": activeReservations,
-    "/favoritos": favoritesCount,
+    "/favoritos": favorites.length,
   };
 
   const content = (
     <div className="flex h-full w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="flex items-center gap-2 px-5 py-5">
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-primary)] font-display text-sm font-bold text-white">
-          S
+          C
         </span>
         <span className="font-display text-lg font-semibold tracking-tight">
-          Sede
+          Coworking
         </span>
       </div>
 
       <nav className="flex flex-col gap-1 px-3">
-        {NAV_LINKS.map((link) => {
+        {navLinks.map((link) => {
           const isActive = pathname?.startsWith(link.href);
           const Icon = link.icon;
           return (
@@ -91,7 +82,7 @@ export function Sidebar({
                   : "text-[var(--color-text-muted)] hover:bg-black/[0.03] hover:text-[var(--color-text)]"
               }`}
             >
-              <Icon />
+              {Icon ? <Icon /> : null}
               {link.label}
               <CountPill count={counts[link.href] ?? 0} />
             </Link>
@@ -114,7 +105,10 @@ export function Sidebar({
               </p>
             </div>
             <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                router.push("/login");
+              }}
               title="Cerrar sesión"
               className="shrink-0 rounded-md p-1.5 text-[var(--color-text-muted)] hover:bg-black/[0.04] hover:text-[var(--color-text)]"
             >
@@ -175,6 +169,14 @@ function HeartIcon() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0">
       <path d="M12 20s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 5c-2.5 4.5-9.5 9-9.5 9Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function AdminIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0">
+      <path d="M4 6h16M4 18h16M8 6v12M16 6v12" strokeLinecap="round" />
     </svg>
   );
 }

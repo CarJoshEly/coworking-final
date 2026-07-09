@@ -12,14 +12,13 @@ async function bootstrap() {
     }),
   );
 
-  // El frontend (Next.js) corre en un puerto distinto al de esta API
-  // (3001 vs 3000), así que son orígenes distintos para el navegador.
-  // Sin esto, todas las peticiones fetch() desde el frontend fallan por CORS.
+  const corsOrigins =
+    process.env.CORS_ORIGIN?.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? [];
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') ?? [
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-    ],
+    origin: corsOrigins.length > 0 ? corsOrigins : false,
     credentials: true,
   });
 

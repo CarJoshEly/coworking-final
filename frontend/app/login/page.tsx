@@ -1,41 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api-client";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/explorar");
+    }
+  }, [user, loading, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setSaving(true);
     try {
       await login({ email, password });
       router.push("/explorar");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo iniciar sesión");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="font-display text-2xl font-semibold">Inicia sesión</h1>
-      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-        Accede para reservar espacios y ver tu actividad.
-      </p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm rounded-3xl border border-[var(--color-border)] bg-white/90 p-8 shadow-lg shadow-black/5">
+        <h1 className="font-display text-2xl font-semibold">Inicia sesión</h1>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+          Accede para reservar espacios y ver tu actividad.
+        </p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="text-sm font-medium">Correo</label>
           <input
@@ -61,10 +68,10 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || saving}
           className="w-full rounded-md bg-[var(--color-primary)] py-2 text-sm font-medium text-white hover:bg-[var(--color-primary-dark)] disabled:opacity-60"
         >
-          {loading ? "Ingresando..." : "Ingresar"}
+          {saving ? "Ingresando..." : "Ingresar"}
         </button>
       </form>
 
@@ -75,5 +82,6 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  </div>
   );
 }

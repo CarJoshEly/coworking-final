@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { mockNotifications } from "@/lib/mock-data";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { notificationsService } from "@/lib/services/notifications";
 import type { Notification } from "@/lib/types";
 
 function timeAgo(iso: string): string {
@@ -15,10 +16,28 @@ function timeAgo(iso: string): string {
 
 export function NotificationsBell() {
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<Notification[]>(mockNotifications);
+  const [items, setItems] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
 
   const unreadCount = items.filter((n) => !n.read).length;
+
+  const load = useCallback(() => {
+    setLoading(true);
+    notificationsService
+      .findMine()
+      .then(setItems)
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+    // Refresca cada minuto para reflejar notificaciones nuevas (recordatorios,
+    // confirmaciones) sin necesidad de recargar la página.
+    const interval = setInterval(load, 60_000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -27,6 +46,24 @@ export function NotificationsBell() {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
+
+  async function handleMarkAllRead() {
+    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await notificationsService.markAllRead();
+    } catch {
+      load();
+    }
+  }
+
+  async function handleMarkRead(id: number) {
+    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await notificationsService.markRead(id);
+    } catch {
+      load();
+    }
+  }
 
   return (
     <div className="relative" ref={ref}>
@@ -50,33 +87,56 @@ export function NotificationsBell() {
         <div className="absolute right-0 z-50 mt-2 w-80 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
           <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
             <h3 className="font-display text-sm font-semibold">Notificaciones</h3>
-            <button
-              onClick={() => setItems((prev) => prev.map((n) => ({ ...n, read: true })))}
-              className="text-xs font-medium text-[var(--color-primary-dark)] hover:underline"
-            >
-              Marcar leídas
-            </button>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="text-xs font-medium text-[var(--color-primary-dark)] hover:underline"
+              >
+                Marcar leídas
+              </button>
+            )}
           </div>
           <ul className="max-h-80 overflow-y-auto">
-            {items.length === 0 && (
+            {loading && (
+              <li className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
+                Cargando…
+              </li>
+            )}
+            {!loading && items.length === 0 && (
               <li className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
                 No tienes notificaciones.
               </li>
             )}
-            {items.map((n) => (
-              <li
-                key={n.id}
-                className={`border-b border-[var(--color-border)] px-4 py-3 text-sm last:border-0 ${
-                  n.read ? "opacity-60" : ""
-                }`}
-              >
-                <p className="leading-snug">{n.message}</p>
-                <p className="mt-1 text-xs text-[var(--color-text-muted)] font-mono-data">
-                  {timeAgo(n.createdAt)}
-                </p>
-              </li>
-            ))}
+            {!loading &&
+              items.map((n) => (
+                <li
+                  key={n.id}
+                  className={`border-b border-[var(--color-border)] px-4 py-3 text-sm last:border-0 ${
+                    n.read ? "opacity-60" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => !n.read && handleMarkRead(n.id)}
+                    className="block w-full text-left"
+                  >
+                    <p className="leading-snug">{n.message}</p>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)] font-mono-data">
+                      {timeAgo(n.createdAt)}
+                    </p>
+                  </button>
+                </li>
+              ))}
           </ul>
+          <div className="border-t border-[var(--color-border)] px-4 py-2 text-center">
+            <Link
+              href="/notificaciones"
+              onClick={() => setOpen(false)}
+              className="text-xs font-medium text-[var(--color-primary-dark)] hover:underline"
+            >
+              Ver todas
+            </Link>
+          </div>
         </div>
       )}
     </div>

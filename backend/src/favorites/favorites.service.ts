@@ -20,8 +20,12 @@ export class FavoritesService {
       throw new BadRequestException('Este espacio ya está en tus favoritos');
     }
 
+    // Se incluye "space" en la respuesta para que el frontend pueda
+    // mostrar la tarjeta del espacio de inmediato tras marcarlo como
+    // favorito, sin depender de un refetch de findMine().
     return this.prisma.favorite.create({
       data: { userId, spaceId: dto.spaceId },
+      include: { space: true },
     });
   }
 

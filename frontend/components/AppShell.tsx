@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const hideShell = pathname === "/login" || pathname === "/registro";
+
+  if (hideShell) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-screen">

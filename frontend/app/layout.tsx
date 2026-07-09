@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { FavoritesProvider } from "@/lib/favorites-context";
 import { AppShell } from "@/components/AppShell";
 
 const spaceGrotesk = Space_Grotesk({
@@ -22,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sede — Coworking",
+  title: "Coworking",
   description: "Encuentra y reserva espacios de coworking en tu campus.",
 };
 
@@ -38,7 +39,9 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[var(--color-bg)] text-[var(--color-text)] font-body">
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <FavoritesProvider>
+            <AppShell>{children}</AppShell>
+          </FavoritesProvider>
         </AuthProvider>
       </body>
     </html>

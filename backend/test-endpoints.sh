@@ -5,10 +5,12 @@
 #   bash test-endpoints.sh
 #
 # Ajusta EMAIL/PASSWORD por un usuario que ya exista en tu base (creado
-# con POST /users) y SPACE_ID por un espacio existente (GET /spaces).
+# con POST /users), SPACE_ID por un espacio existente (GET /spaces) y
+# API_URL por la URL base de la API.
 
 set -e
-API="http://localhost:3000"
+: "${API_URL:?Debes definir API_URL con la URL base de la API}"
+API="$API_URL"
 EMAIL="usuario@test.com"
 PASSWORD="123456"
 SPACE_ID=1

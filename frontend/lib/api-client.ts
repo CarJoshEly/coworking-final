@@ -3,7 +3,11 @@
 // una sola fuente de verdad para la URL base, el header de auth y
 // el manejo de errores.
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL no esta configurada");
+}
 
 const TOKEN_KEY = "sede_access_token";
 

@@ -6,6 +6,7 @@ import { spacesService } from "@/lib/services/spaces";
 import { reservationsService } from "@/lib/services/reservations";
 import { reviewsService } from "@/lib/services/reviews";
 import { useAuth } from "@/lib/auth-context";
+import { useFavorites } from "@/lib/favorites-context";
 import { ApiError } from "@/lib/api-client";
 import type { Review, ReservationSlot, Space } from "@/lib/types";
 import { AMENITY_LABELS, getSpaceAmenities, getSpacePricePerHour } from "@/lib/mock-data";
@@ -22,6 +23,8 @@ export default function EspacioDetallePage() {
   const params = useParams<{ id: string }>();
   const spaceId = Number(params.id);
   const { user } = useAuth();
+  const { isFavorite, toggle } = useFavorites();
+  const favorited = isFavorite(spaceId);
 
   const [space, setSpace] = useState<Space | null>(null);
   const [spaceStatus, setSpaceStatus] = useState<"loading" | "error" | "ready">("loading");
@@ -184,7 +187,29 @@ export default function EspacioDetallePage() {
         />
       )}
 
-      <h1 className="mt-5 font-display text-2xl font-semibold sm:text-3xl">{space.name}</h1>
+      <div className="mt-5 flex items-start justify-between gap-3">
+        <h1 className="font-display text-2xl font-semibold sm:text-3xl">{space.name}</h1>
+        {user && (
+          <button
+            type="button"
+            aria-pressed={favorited}
+            onClick={() => toggle(space.id)}
+            className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              favorited
+                ? "border-[var(--color-status-cancelled)] bg-[var(--color-status-cancelled-bg)] text-[var(--color-status-cancelled)]"
+                : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-status-cancelled)]/40"
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill={favorited ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
+              <path
+                d="M12 20.5s-7.5-4.6-10-9.3C.5 8 2 4.5 5.5 3.8c2-.4 3.9.5 5 2.1a5.6 5.6 0 0 1 1.5-1.7c1.3-1 3.3-1.4 5-.4 2.7 1.5 3.5 5 2 8.4-2.5 4.7-10 9.3-10 9.3Z"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {favorited ? "Guardado" : "Guardar"}
+          </button>
+        )}
+      </div>
       <p className="mt-1 text-[var(--color-text-muted)]">
         {space.location} · {space.capacity} personas
       </p>
@@ -281,7 +306,7 @@ export default function EspacioDetallePage() {
       </section>
 
       {/* Reseñas */}
-      <section className="mt-8">
+      <section id="resena" className="mt-8 scroll-mt-20">
         <h2 className="font-display text-lg font-semibold">
           Reseñas
           {avgRating !== null && (
